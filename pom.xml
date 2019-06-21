@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.axel.orange</groupId>
+    <artifactId>albanque_robot</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <name>albanque_robot</name>
+    <description>albanque_robot</description>
+    <!-- Output to jar format -->
+    <packaging>jar</packaging>
+
+    <properties>
+        <cucumber.options>--tags @TOSPECIFY</cucumber.options>
+        <excelfilename>@TOSPECIFY</excelfilename>
+        <jenkinsresourcespath>src/test/resources</jenkinsresourcespath>
+        <noraui.version>3.1.3</noraui.version>
+        <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
+        <maven-resources-plugin.version>3.0.2</maven-resources-plugin.version>
+        <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
+        <maven-surefire-plugin.version>2.20.1</maven-surefire-plugin.version>
+        <sonar-maven-plugin.version>3.3.0.603</sonar-maven-plugin.version>
+        <maven-javadoc-plugin.version>3.0.0-M1</maven-javadoc-plugin.version>
+        <jacoco-maven-plugin.version>0.7.9</jacoco-maven-plugin.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <env>dev</env>
+    </properties>
+
+    <dependencies>
+
+        <!-- Non-Regression Automation for User Interfaces -->
+        <dependency>
+            <groupId>com.github.noraui</groupId>
+            <artifactId>noraui</artifactId>
+            <version>${noraui.version}</version>
+            <exclusions>
+                <exclusion>
+			        <groupId>com.oracle.jdbc</groupId>
+			        <artifactId>ojdbc8</artifactId>
+			    </exclusion>
+                <exclusion>
+			        <groupId>mysql</groupId>
+			        <artifactId>mysql-connector-java</artifactId>
+			    </exclusion>
+                <exclusion>
+			        <groupId>org.postgresql</groupId>
+			        <artifactId>postgresql</artifactId>
+			    </exclusion>
+		    </exclusions>
+        </dependency>
+
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>jenkins-releases</id>
+            <url>http://repo.jenkins-ci.org/releases/</url>
+        </repository>
+        <repository>
+            <id>sonatype-releases</id>
+            <url>https://oss.sonatype.org/content/repositories/releases</url>
+        </repository>
+        <repository>
+            <id>sonatype-snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </repository>
+    </repositories>
+
+    <build>
+
+        <filters>
+            <filter>src/test/resources/environments/${env}.properties</filter>
+        </filters>
+
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                    <useIncrementalCompilation>true</useIncrementalCompilation>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${maven-resources-plugin.version}</version>
+                <configuration>
+                    <escapeWindowsPaths>false</escapeWindowsPaths>
+                </configuration>
+            </plugin>
+
+        </plugins>
+
+        <resources>
+            <resource>
+                <!-- copy and filter properties files -->
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>**/*.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <!-- copy and filter properties files -->
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/*.ini</include>
+                </includes>
+            </resource>
+        </resources>
+
+        <testResources>
+            <testResource>
+                <!-- copy without filtering .feature -->
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/*.feature</include>
+                </includes>
+            </testResource>
+        </testResources>
+
+    </build>
+
+    <profiles>
+        <profile>
+            <id>analyze</id>
+            <properties>
+                <sonar.host.url>http://172.0.0.1:80</sonar.host.url>
+                <sonar.sources>${project.basedir}/src/main/java</sonar.sources>
+                <sonar.scm.provider>git</sonar.scm.provider>
+                <sonar.jacoco.reportPaths>${project.build.directory}/coverage-reports/jacoco-ut.exec</sonar.jacoco.reportPaths>
+            </properties>
+            <build>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <groupId>org.sonarsource.scanner.maven</groupId>
+                            <artifactId>sonar-maven-plugin</artifactId>
+                            <version>${sonar-maven-plugin.version}</version>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
+            </build>
+        </profile>
+
+        <profile>
+            <id>javadoc</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven-javadoc-plugin.version}</version>
+                        <configuration>
+                            <aggregate>true</aggregate>
+                            <stylesheetfile>${basedir}/src/test/resources/dev/stylesheet.css</stylesheetfile>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- preIC -->
+        <profile>
+            <id>preIC</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>${exec-maven-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>Counter-execution</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                                <configuration>
+                                    <mainClass>com.axel.orange.indus.Counter</mainClass>
+                                    <arguments>
+                                        <argument>Excel</argument>
+                                    </arguments>
+                                    <systemProperties>
+                                        <systemProperty>
+                                            <key>resourcespath</key>
+                                            <value>${jenkinsresourcespath}</value>
+                                        </systemProperty>
+                                    </systemProperties>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- postIC -->
+        <profile>
+            <id>postIC</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.7</version>
+                        <executions>
+                            <execution>
+                                <id>copy-gherkin-formatter-file</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                                <configuration>
+                                    <target name="copy">
+                                        <copy
+                                            file="src/test/resources/dev/formatter.js"
+                                            tofile="target/reports/html/formatter.js"
+                                            overwrite="true" />
+                                        <copy
+                                            file="src/test/resources/dev/index.html"
+                                            tofile="target/reports/html/index.html"
+                                            overwrite="true" />
+                                        <copy
+                                            file="src/test/resources/dev/counter.js"
+                                            tofile="target/reports/html/counter.js"
+                                            overwrite="true" />
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- scenarioInitiator -->
+        <profile>
+            <id>scenarioInitiator</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>${exec-maven-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>ScenarioInitiator-execution</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                                <configuration>
+                                    <mainClass>com.axel.orange.main.ScenarioInitiatorRunner</mainClass>
+                                    <arguments>
+                                        <argument>${excelfilename}</argument>
+                                    </arguments>
+                                    <systemProperties>
+                                        <systemProperty>
+                                            <key>resourcespath</key>
+                                            <value>${jenkinsresourcespath}</value>
+                                        </systemProperty>
+                                    </systemProperties>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>unit-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco-maven-plugin.version}</version>
+                        <executions>
+                            <!-- Prepares the property pointing to the JaCoCo 
+                                runtime agent which is passed as VM argument when Maven the Surefire plugin 
+                                is executed. -->
+                            <execution>
+                                <id>pre-unit-test</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- Sets the path to the file which 
+                                        contains the execution data. -->
+                                    <destFile>${project.build.directory}/coverage-reports/jacoco-ut.exec</destFile>
+                                    <!-- Sets the name of the property containing 
+                                        the settings for JaCoCo runtime agent. -->
+                                    <propertyName>surefireArgLine</propertyName>
+                                </configuration>
+                            </execution>
+                            <!-- Ensures that the code coverage report for 
+                                unit tests is created after unit tests have been run. -->
+                            <execution>
+                                <id>post-unit-test</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- Sets the path to the file which 
+                                        contains the execution data. -->
+                                    <dataFile>${project.build.directory}/coverage-reports/jacoco-ut.exec</dataFile>
+                                    <!-- Sets the output directory for the 
+                                        code coverage report. -->
+                                    <outputDirectory>${project.reporting.outputDirectory}/jacoco-ut</outputDirectory>
+                                    <!-- <append>true</append> -->
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <!-- The Surefire Plugin is used during the test phase 
+                        of the build lifecycle to execute the unit tests of an application -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <resourcespath>src/test/resources</resourcespath>
+                                <cucumber.options>${cucumber.options}</cucumber.options>
+                                <phantomjs.binary.path>src/test/resources/drivers/%s/phantomjs/%s/phantomjs%s</phantomjs.binary.path>
+                                <webdriver.ie.driver>src/test/resources/drivers/%s/internetexplorer/%s/IEDriverServer%s</webdriver.ie.driver>
+                                <webdriver.chrome.driver>src/test/resources/drivers/%s/googlechrome/%s/chromedriver.exe</webdriver.chrome.driver>
+                                <uid>${uid}</uid>
+                                <password>${password}</password>
+                                <cookie>${cookie}</cookie>
+                            </systemPropertyVariables>
+                            <includes>
+                                <include>**/*UT.java</include>
+                                <include>**/NoraRobotRunner.java</include>
+                            </includes>
+                            <argLine>-Dfile.encoding=UTF-8
+                                ${surefireArgLine}</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>albanque_robot</id>
+            <build>
+                <plugins>
+                    <!-- The Surefire Plugin is used during the test phase 
+                        of the build lifecycle to execute the unit tests of an application -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <cucumber.options>${cucumber.options}</cucumber.options>
+                                <resourcespath>src/test/resources</resourcespath>
+                                <phantomjs.binary.path>src/test/resources/drivers/%s/phantomjs/%s/phantomjs%s</phantomjs.binary.path>
+                                <webdriver.ie.driver>src/test/resources/drivers/%s/internetexplorer/%s/IEDriverServer%s</webdriver.ie.driver>
+                                <webdriver.chrome.driver>src/test/resources/drivers/%s/googlechrome/%s/chromedriver.exe</webdriver.chrome.driver>
+                                <SpeedRegulator.annotation.enable>false</SpeedRegulator.annotation.enable>
+                                <SpeedRegulators.annotation.enable>false</SpeedRegulators.annotation.enable>
+                                <Time.annotation.enable>false</Time.annotation.enable>
+                                <Times.annotation.enable>false</Times.annotation.enable>
+                                <uid>${uid}</uid>
+                                <password>${password}</password>
+                                <cookie>${cookie}</cookie>
+                            </systemPropertyVariables>
+                            <includes>
+                                <include>**/NoraRobotRunner.java</include>
+                            </includes>
+                            <argLine>-Dfile.encoding=UTF-8</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- environment cible -->
+        <profile>
+            <id>dev</id>
+            <properties>
+                <env>dev</env>
+            </properties>
+        </profile>
+        <profile>
+            <id>ci</id>
+            <properties>
+                <env>ci</env>
+            </properties>
+        </profile>
+        <profile>
+            <id>prod</id>
+            <properties>
+                <env>prod</env>
+            </properties>
+        </profile>
+    </profiles>
+
+    <distributionManagement>
+        <!-- Publish snapshots here -->
+        <snapshotRepository>
+            <id>sonatype-nexus</id>
+            <name>snapshots</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </snapshotRepository>
+        <!-- Publish versioned releases here -->
+        <repository>
+            <id>sonatype-nexus</id>
+            <name>releases</name>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+</project>
